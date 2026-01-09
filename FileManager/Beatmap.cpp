@@ -19,23 +19,11 @@ namespace FileManager {
     void Beatmap::load(const std::string& chart_path) {
         this->file_path = chart_path;
 
-        try {
-            // 使用 JsonParser 解析文件
-            beatmap_data = Tools::JsonParser::parseFromFile(chart_path);
+        // 使用 JsonParser 解析文件
+        beatmap_data = Tools::JsonParser::parseFromFile(chart_path);
 
-            // 验证谱面格式
-            validateFormat();
-        } catch (const Tools::FileNotFoundException& e) {
-            throw BeatmapException("File not found: " + chart_path);
-        } catch (const Tools::ParseException& e) {
-            throw BeatmapException("Parse error: " + std::string(e.what()));
-        } catch (const Tools::FileReadException& e) {
-            throw BeatmapException("File read error: " + std::string(e.what()));
-        } catch (const BeatmapException&) {
-            throw;
-        } catch (const std::exception& e) {
-            throw BeatmapException("Unexpected error: " + std::string(e.what()));
-        }
+        // 验证谱面格式
+        validateFormat();
     }
 
     // 获取原始JSON数据
@@ -102,18 +90,14 @@ namespace FileManager {
             throw BeatmapException("No beatmap loaded");
         }
 
-        try {
-            const auto& meta = beatmap_data.at("meta");
-            std::string bg_filename = meta.value("background", "background.jpg");
+        const auto& meta = beatmap_data.at("meta");
+        std::string bg_filename = meta.value("background", "background.jpg");
 
-            // 构建完整路径
-            std::filesystem::path dir_path(beatmap_dir);
-            std::filesystem::path bg_path = dir_path / bg_filename;
+        // 构建完整路径
+        std::filesystem::path dir_path(beatmap_dir);
+        std::filesystem::path bg_path = dir_path / bg_filename;
 
-            return bg_path.string();
-        } catch (const std::exception& e) {
-            throw BeatmapException("Failed to get background image path: " + std::string(e.what()));
-        }
+        return bg_path.string();
     }
 
     // 获取音乐文件路径
@@ -122,19 +106,15 @@ namespace FileManager {
             throw BeatmapException("No beatmap loaded");
         }
 
-        try {
-            const auto& meta = beatmap_data.at("meta");
-            const auto& song = meta.at("song");
-            std::string music_filename = song.at("file").get<std::string>();
+        const auto& meta = beatmap_data.at("meta");
+        const auto& song = meta.at("song");
+        std::string music_filename = song.at("file").get<std::string>();
 
-            // 构建完整路径
-            std::filesystem::path dir_path(beatmap_dir);
-            std::filesystem::path music_path = dir_path / music_filename;
+        // 构建完整路径
+        std::filesystem::path dir_path(beatmap_dir);
+        std::filesystem::path music_path = dir_path / music_filename;
 
-            return music_path.string();
-        } catch (const std::exception& e) {
-            throw BeatmapException("Failed to get music path: " + std::string(e.what()));
-        }
+        return music_path.string();
     }
 
     // 验证谱面格式

@@ -21,7 +21,7 @@ namespace Tools {
             buffer << file.rdbuf();
             file.close();
 
-            // 调用 parseFromString 解析
+            // 调用 parseFromString 解析（异常会直接传播）
             return parseFromString(buffer.str());
         } catch (const FileNotFoundException&) {
             // 重新抛出文件未找到异常
@@ -49,12 +49,12 @@ namespace Tools {
 
     // 保存 JSON 到文件
     void JsonParser::saveToFile(const nlohmann::json& json_data, const std::string& file_path, int indent) {
-        try {
-            std::ofstream file(file_path);
-            if (!file.is_open()) {
-                throw FileWriteException("Failed to open file for writing: " + file_path);
-            }
+        std::ofstream file(file_path);
+        if (!file.is_open()) {
+            throw FileWriteException("Failed to open file for writing: " + file_path);
+        }
 
+        try {
             // 格式化输出 JSON
             file << json_data.dump(indent);
             file.close();

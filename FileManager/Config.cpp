@@ -18,21 +18,13 @@ namespace FileManager {
     void Config::load(const std::string& config_path) {
         this->config_path = config_path;
 
-        try {
-            // 检查文件是否存在
-            if (std::filesystem::exists(config_path)) {
-                // 使用 JsonParser 解析文件
-                config_data = Tools::JsonParser::parseFromFile(config_path);
-            } else {
-                // 文件不存在，创建默认配置
-                config_data = nlohmann::json::object();
-            }
-        } catch (const Tools::ParseException& e) {
-            throw ConfigException("Parse error: " + std::string(e.what()));
-        } catch (const Tools::FileReadException& e) {
-            throw ConfigException("File read error: " + std::string(e.what()));
-        } catch (const std::exception& e) {
-            throw ConfigException("Unexpected error: " + std::string(e.what()));
+        // 检查文件是否存在
+        if (std::filesystem::exists(config_path)) {
+            // 使用 JsonParser 解析文件
+            config_data = Tools::JsonParser::parseFromFile(config_path);
+        } else {
+            // 文件不存在，创建默认配置
+            config_data = nlohmann::json::object();
         }
     }
 
@@ -44,21 +36,15 @@ namespace FileManager {
             throw ConfigException("No config path specified");
         }
 
-        try {
-            // 确保目录存在
-            std::filesystem::path path_obj(save_path);
-            if (path_obj.has_parent_path()) {
-                std::filesystem::create_directories(path_obj.parent_path());
-            }
-
-            // 使用 JsonParser 保存文件
-            Tools::JsonParser::saveToFile(config_data, save_path);
-            this->config_path = save_path;
-        } catch (const Tools::FileWriteException& e) {
-            throw ConfigException("File write error: " + std::string(e.what()));
-        } catch (const std::exception& e) {
-            throw ConfigException("Unexpected error: " + std::string(e.what()));
+        // 确保目录存在
+        std::filesystem::path path_obj(save_path);
+        if (path_obj.has_parent_path()) {
+            std::filesystem::create_directories(path_obj.parent_path());
         }
+
+        // 使用 JsonParser 保存文件
+        Tools::JsonParser::saveToFile(config_data, save_path);
+        this->config_path = save_path;
     }
 
     // 获取配置值
