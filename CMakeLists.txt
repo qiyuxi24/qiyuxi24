@@ -13,13 +13,17 @@ set(THIRD_PARTY_DIR ${PROJECT_ROOT_DIR}/ThirdParty)
 
 # 添加SFML库（使用相对路径）
 set(SFML_DIR ${THIRD_PARTY_DIR}/SFML-2.6.1/lib/cmake/SFML)
-find_package(SFML 2.6.1 COMPONENTS graphics window system REQUIRED)
+find_package(SFML 2.6.1 COMPONENTS graphics window system audio REQUIRED)
 
 # 添加可执行文件（所有源文件使用相对路径）
 add_executable(NOJ_Solution
         ${PROJECT_ROOT_DIR}/main.cpp
         ${PROJECT_ROOT_DIR}/Tools/JsonParser.cpp
         ${PROJECT_ROOT_DIR}/Tools/JsonParser.h
+        ${PROJECT_ROOT_DIR}/Tools/Timer.cpp
+        ${PROJECT_ROOT_DIR}/Tools/Timer.h
+        ${PROJECT_ROOT_DIR}/Tools/Music.cpp
+        ${PROJECT_ROOT_DIR}/Tools/Music.h
         ${PROJECT_ROOT_DIR}/FileManager/Beatmap.cpp
         ${PROJECT_ROOT_DIR}/FileManager/Beatmap.h
         ${PROJECT_ROOT_DIR}/FileManager/Config.cpp
@@ -42,6 +46,7 @@ target_link_libraries(NOJ_Solution PRIVATE
         sfml-graphics
         sfml-window
         sfml-system
+        sfml-audio
 )
 
 # 链接 filesystem 库（某些编译器需要）
