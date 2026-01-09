@@ -29,7 +29,9 @@ add_executable(NOJ_Solution
         ${PROJECT_ROOT_DIR}/FileManager/Screenshot.cpp
         ${PROJECT_ROOT_DIR}/FileManager/Screenshot.h
         ${PROJECT_ROOT_DIR}/FileManager/Logger.cpp
-        ${PROJECT_ROOT_DIR}/FileManager/Logger.h)
+        ${PROJECT_ROOT_DIR}/FileManager/Logger.h
+        ${PROJECT_ROOT_DIR}/FileManager/FileManager.cpp
+        ${PROJECT_ROOT_DIR}/FileManager/FileManager.h)
 
 # 配置头文件目录（使用相对路径）
 include_directories(
