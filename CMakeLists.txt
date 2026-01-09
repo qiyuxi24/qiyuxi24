@@ -24,6 +24,8 @@ add_executable(NOJ_Solution
         ${PROJECT_ROOT_DIR}/Tools/Timer.h
         ${PROJECT_ROOT_DIR}/Tools/Music.cpp
         ${PROJECT_ROOT_DIR}/Tools/Music.h
+        ${PROJECT_ROOT_DIR}/Game/Gameplay.cpp
+        ${PROJECT_ROOT_DIR}/Game/Gameplay.h
         ${PROJECT_ROOT_DIR}/FileManager/Beatmap.cpp
         ${PROJECT_ROOT_DIR}/FileManager/Beatmap.h
         ${PROJECT_ROOT_DIR}/FileManager/Config.cpp

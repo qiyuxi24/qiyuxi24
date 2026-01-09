@@ -18,6 +18,6 @@ namespace timer {
     // 停止计时器（停止后台线程）
     void shutdown();
 }
-
 #endif //NOJ_SOLUTION_TIMER_H
+
 

@@ -65,6 +65,30 @@ build CMakeFiles/NOJ_Solution.dir/Tools/JsonParser.cpp.obj: CXX_COMPILER__NOJ_So
   OBJECT_DIR = CMakeFiles\NOJ_Solution.dir
   OBJECT_FILE_DIR = CMakeFiles\NOJ_Solution.dir\Tools
 
+build CMakeFiles/NOJ_Solution.dir/Tools/Timer.cpp.obj: CXX_COMPILER__NOJ_Solution_unscanned_Debug D$:/github_repository/qiyuxi24/Tools/Timer.cpp || cmake_object_order_depends_target_NOJ_Solution
+  CONFIG = Debug
+  DEP_FILE = CMakeFiles\NOJ_Solution.dir\Tools\Timer.cpp.obj.d
+  FLAGS = -g -std=gnu++20
+  INCLUDES = -ID:/github_repository/qiyuxi24/ThirdParty/nlohmann_json/include -isystem D:/github_repository/qiyuxi24/ThirdParty/SFML-2.6.1/include
+  OBJECT_DIR = CMakeFiles\NOJ_Solution.dir
+  OBJECT_FILE_DIR = CMakeFiles\NOJ_Solution.dir\Tools
+
+build CMakeFiles/NOJ_Solution.dir/Tools/Music.cpp.obj: CXX_COMPILER__NOJ_Solution_unscanned_Debug D$:/github_repository/qiyuxi24/Tools/Music.cpp || cmake_object_order_depends_target_NOJ_Solution
+  CONFIG = Debug
+  DEP_FILE = CMakeFiles\NOJ_Solution.dir\Tools\Music.cpp.obj.d
+  FLAGS = -g -std=gnu++20
+  INCLUDES = -ID:/github_repository/qiyuxi24/ThirdParty/nlohmann_json/include -isystem D:/github_repository/qiyuxi24/ThirdParty/SFML-2.6.1/include
+  OBJECT_DIR = CMakeFiles\NOJ_Solution.dir
+  OBJECT_FILE_DIR = CMakeFiles\NOJ_Solution.dir\Tools
+
+build CMakeFiles/NOJ_Solution.dir/Game/Gameplay.cpp.obj: CXX_COMPILER__NOJ_Solution_unscanned_Debug D$:/github_repository/qiyuxi24/Game/Gameplay.cpp || cmake_object_order_depends_target_NOJ_Solution
+  CONFIG = Debug
+  DEP_FILE = CMakeFiles\NOJ_Solution.dir\Game\Gameplay.cpp.obj.d
+  FLAGS = -g -std=gnu++20
+  INCLUDES = -ID:/github_repository/qiyuxi24/ThirdParty/nlohmann_json/include -isystem D:/github_repository/qiyuxi24/ThirdParty/SFML-2.6.1/include
+  OBJECT_DIR = CMakeFiles\NOJ_Solution.dir
+  OBJECT_FILE_DIR = CMakeFiles\NOJ_Solution.dir\Game
+
 build CMakeFiles/NOJ_Solution.dir/FileManager/Beatmap.cpp.obj: CXX_COMPILER__NOJ_Solution_unscanned_Debug D$:/github_repository/qiyuxi24/FileManager/Beatmap.cpp || cmake_object_order_depends_target_NOJ_Solution
   CONFIG = Debug
   DEP_FILE = CMakeFiles\NOJ_Solution.dir\FileManager\Beatmap.cpp.obj.d
@@ -113,10 +137,10 @@ build CMakeFiles/NOJ_Solution.dir/FileManager/Logger.cpp.obj: CXX_COMPILER__NOJ_
 #############################################
 # Link the executable NOJ_Solution.exe
 
-build NOJ_Solution.exe: CXX_EXECUTABLE_LINKER__NOJ_Solution_Debug CMakeFiles/NOJ_Solution.dir/main.cpp.obj CMakeFiles/NOJ_Solution.dir/Tools/JsonParser.cpp.obj CMakeFiles/NOJ_Solution.dir/FileManager/Beatmap.cpp.obj CMakeFiles/NOJ_Solution.dir/FileManager/Config.cpp.obj CMakeFiles/NOJ_Solution.dir/FileManager/User.cpp.obj CMakeFiles/NOJ_Solution.dir/FileManager/Screenshot.cpp.obj CMakeFiles/NOJ_Solution.dir/FileManager/Logger.cpp.obj | D$:/github_repository/qiyuxi24/ThirdParty/SFML-2.6.1/lib/libsfml-graphics-d.a D$:/github_repository/qiyuxi24/ThirdParty/SFML-2.6.1/lib/libsfml-window-d.a D$:/github_repository/qiyuxi24/ThirdParty/SFML-2.6.1/lib/libsfml-system-d.a
+build NOJ_Solution.exe: CXX_EXECUTABLE_LINKER__NOJ_Solution_Debug CMakeFiles/NOJ_Solution.dir/main.cpp.obj CMakeFiles/NOJ_Solution.dir/Tools/JsonParser.cpp.obj CMakeFiles/NOJ_Solution.dir/Tools/Timer.cpp.obj CMakeFiles/NOJ_Solution.dir/Tools/Music.cpp.obj CMakeFiles/NOJ_Solution.dir/Game/Gameplay.cpp.obj CMakeFiles/NOJ_Solution.dir/FileManager/Beatmap.cpp.obj CMakeFiles/NOJ_Solution.dir/FileManager/Config.cpp.obj CMakeFiles/NOJ_Solution.dir/FileManager/User.cpp.obj CMakeFiles/NOJ_Solution.dir/FileManager/Screenshot.cpp.obj CMakeFiles/NOJ_Solution.dir/FileManager/Logger.cpp.obj | D$:/github_repository/qiyuxi24/ThirdParty/SFML-2.6.1/lib/libsfml-graphics-d.a D$:/github_repository/qiyuxi24/ThirdParty/SFML-2.6.1/lib/libsfml-window-d.a D$:/github_repository/qiyuxi24/ThirdParty/SFML-2.6.1/lib/libsfml-audio-d.a D$:/github_repository/qiyuxi24/ThirdParty/SFML-2.6.1/lib/libsfml-system-d.a
   CONFIG = Debug
   FLAGS = -g
-  LINK_LIBRARIES = D:/github_repository/qiyuxi24/ThirdParty/SFML-2.6.1/lib/libsfml-graphics-d.a  D:/github_repository/qiyuxi24/ThirdParty/SFML-2.6.1/lib/libsfml-window-d.a  D:/github_repository/qiyuxi24/ThirdParty/SFML-2.6.1/lib/libsfml-system-d.a  -lstdc++fs  -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
+  LINK_LIBRARIES = D:/github_repository/qiyuxi24/ThirdParty/SFML-2.6.1/lib/libsfml-graphics-d.a  D:/github_repository/qiyuxi24/ThirdParty/SFML-2.6.1/lib/libsfml-window-d.a  D:/github_repository/qiyuxi24/ThirdParty/SFML-2.6.1/lib/libsfml-audio-d.a  -lstdc++fs  D:/github_repository/qiyuxi24/ThirdParty/SFML-2.6.1/lib/libsfml-system-d.a  -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
   OBJECT_DIR = CMakeFiles\NOJ_Solution.dir
   POST_BUILD = C:\Windows\system32\cmd.exe /C "cd /D D:\github_repository\qiyuxi24\build && "C:\Program Files\CMake\bin\cmake.exe" -E copy_directory D:/github_repository/qiyuxi24/ThirdParty/SFML-2.6.1/bin D:/github_repository/qiyuxi24/build"
   PRE_LINK = cd .

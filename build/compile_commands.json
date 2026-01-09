@@ -13,6 +13,24 @@
 },
 {
   "directory": "D:/github_repository/qiyuxi24/build",
+  "command": "C:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -ID:/github_repository/qiyuxi24/ThirdParty/nlohmann_json/include -isystem D:/github_repository/qiyuxi24/ThirdParty/SFML-2.6.1/include -g -std=gnu++20 -o CMakeFiles\\NOJ_Solution.dir\\Tools\\Timer.cpp.obj -c D:\\github_repository\\qiyuxi24\\Tools\\Timer.cpp",
+  "file": "D:\\github_repository\\qiyuxi24\\Tools\\Timer.cpp",
+  "output": "CMakeFiles\\NOJ_Solution.dir\\Tools\\Timer.cpp.obj"
+},
+{
+  "directory": "D:/github_repository/qiyuxi24/build",
+  "command": "C:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -ID:/github_repository/qiyuxi24/ThirdParty/nlohmann_json/include -isystem D:/github_repository/qiyuxi24/ThirdParty/SFML-2.6.1/include -g -std=gnu++20 -o CMakeFiles\\NOJ_Solution.dir\\Tools\\Music.cpp.obj -c D:\\github_repository\\qiyuxi24\\Tools\\Music.cpp",
+  "file": "D:\\github_repository\\qiyuxi24\\Tools\\Music.cpp",
+  "output": "CMakeFiles\\NOJ_Solution.dir\\Tools\\Music.cpp.obj"
+},
+{
+  "directory": "D:/github_repository/qiyuxi24/build",
+  "command": "C:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -ID:/github_repository/qiyuxi24/ThirdParty/nlohmann_json/include -isystem D:/github_repository/qiyuxi24/ThirdParty/SFML-2.6.1/include -g -std=gnu++20 -o CMakeFiles\\NOJ_Solution.dir\\Game\\Gameplay.cpp.obj -c D:\\github_repository\\qiyuxi24\\Game\\Gameplay.cpp",
+  "file": "D:\\github_repository\\qiyuxi24\\Game\\Gameplay.cpp",
+  "output": "CMakeFiles\\NOJ_Solution.dir\\Game\\Gameplay.cpp.obj"
+},
+{
+  "directory": "D:/github_repository/qiyuxi24/build",
   "command": "C:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -ID:/github_repository/qiyuxi24/ThirdParty/nlohmann_json/include -isystem D:/github_repository/qiyuxi24/ThirdParty/SFML-2.6.1/include -g -std=gnu++20 -o CMakeFiles\\NOJ_Solution.dir\\FileManager\\Beatmap.cpp.obj -c D:\\github_repository\\qiyuxi24\\FileManager\\Beatmap.cpp",
   "file": "D:\\github_repository\\qiyuxi24\\FileManager\\Beatmap.cpp",
   "output": "CMakeFiles\\NOJ_Solution.dir\\FileManager\\Beatmap.cpp.obj"
