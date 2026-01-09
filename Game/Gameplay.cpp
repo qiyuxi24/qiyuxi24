@@ -11,6 +11,13 @@
 #include <string>
 #include <SFML/Graphics/Text.hpp>
 #include <SFML/Graphics/Font.hpp>
+#include <SFML/Graphics/RectangleShape.hpp>
+#include <SFML/Graphics/RenderWindow.hpp>
+#include <SFML/Window/Keyboard.hpp>
+#include <SFML/Window/Event.hpp>
+#include <SFML/Graphics.hpp>
+#include <SFML/Window.hpp>
+#include <SFML/System.hpp>
 
 namespace Game {
     // Constants
@@ -250,10 +257,11 @@ namespace Game {
         // Set frame rate limit to 60 FPS
         window.setFramerateLimit(FRAME_RATE);
         
-        // Calculate track dimensions
+        // Calculate track dimensions (tracks are half width but still centered)
         float total_width = window_width * (1.0f - 2.0f * TRACK_MARGIN_RATIO);
-        float track_width = total_width / NUM_TRACKS;
-        float start_x = window_width * TRACK_MARGIN_RATIO;
+        float tracks_total_width = total_width * 0.5f;  // Half of original width
+        float track_width = tracks_total_width / NUM_TRACKS;
+        float start_x = (window_width - tracks_total_width) / 2.0f;  // Center the tracks
         float track_height = static_cast<float>(window_height);
         
         // Judge line position
@@ -269,10 +277,10 @@ namespace Game {
         
         // Example notes: bottom edge enters screen at different times
         std::vector<NoteTemplate> note_templates;
-        note_templates.push_back({0, 0.5f, 100.0f, 1000.0f});  // Track 0, spawns at 1 second
-        note_templates.push_back({1, 0.5f, 100.0f, 2000.0f});  // Track 1, spawns at 2 seconds
-        note_templates.push_back({2, 0.5f, 100.0f, 3000.0f});  // Track 2, spawns at 3 seconds
-        note_templates.push_back({3, 0.5f, 100.0f, 4000.0f});  // Track 3, spawns at 4 seconds
+        note_templates.push_back({0, 3.0f, 100.0f, 1000.0f});  // Track 0, spawns at 1 second
+        note_templates.push_back({1, 3.0f, 100.0f, 2000.0f});  // Track 1, spawns at 2 seconds
+        note_templates.push_back({2, 3.0f, 100.0f, 3000.0f});  // Track 2, spawns at 3 seconds
+        note_templates.push_back({3, 3.0f, 100.0f, 4000.0f});  // Track 3, spawns at 4 seconds
         
         // Active notes on screen
         std::vector<ActiveNote> active_notes;
@@ -288,7 +296,7 @@ namespace Game {
         }
         
         // Create judge line using SFML RectangleShape
-        float judge_line_width = total_width;
+        float judge_line_width = tracks_total_width;
         float judge_line_x = start_x;
         
         sf::RectangleShape judge_line;
@@ -300,13 +308,39 @@ namespace Game {
         sf::Font default_font;
         bool font_loaded = false;
         
-        // Try to load common Windows system fonts
+        // Try to load beautiful system fonts (prioritized by aesthetics)
         const char* font_paths[] = {
-            "C:/Windows/Fonts/arial.ttf",
-            "C:/Windows/Fonts/calibri.ttf",
-            "C:/Windows/Fonts/msyh.ttf",
-            "C:/Windows/Fonts/simsun.ttc",
-            "C:/Windows/Fonts/tahoma.ttf"
+            // Premium modern fonts (best looking)
+            "C:/Windows/Fonts/segoeui.ttf",        // Segoe UI (Windows 10/11 default, clean and modern)
+            "C:/Windows/Fonts/segoeuib.ttf",       // Segoe UI Bold (bold version)
+            "C:/Windows/Fonts/segoeuil.ttf",       // Segoe UI Light (elegant)
+            "C:/Windows/Fonts/consola.ttf",        // Consolas (monospace, crisp for games)
+            "C:/Windows/Fonts/consolab.ttf",       // Consolas Bold
+            "C:/Windows/Fonts/verdana.ttf",        // Verdana (very readable, modern)
+            "C:/Windows/Fonts/verdanab.ttf",       // Verdana Bold
+            "C:/Windows/Fonts/trebuc.ttf",         // Trebuchet MS (modern, friendly)
+            "C:/Windows/Fonts/trebucbd.ttf",       // Trebuchet MS Bold
+            "C:/Windows/Fonts/georgia.ttf",        // Georgia (elegant serif)
+            "C:/Windows/Fonts/georgiab.ttf",       // Georgia Bold
+            
+            // Game-style fonts
+            "C:/Windows/Fonts/impact.ttf",         // Impact (bold, striking for game UI)
+            "C:/Windows/Fonts/framd.ttf",          // Franklin Gothic Medium
+            "C:/Windows/Fonts/framdit.ttf",        // Franklin Gothic Medium Italic
+            
+            // Modern UI fonts
+            "C:/Windows/Fonts/calibri.ttf",        // Calibri (modern sans-serif)
+            "C:/Windows/Fonts/calibrib.ttf",      // Calibri Bold
+            "C:/Windows/Fonts/arial.ttf",          // Arial (classic, reliable)
+            "C:/Windows/Fonts/arialbd.ttf",        // Arial Bold
+            
+            // Chinese fonts
+            "C:/Windows/Fonts/msyh.ttf",           // Microsoft YaHei (微软雅黑)
+            "C:/Windows/Fonts/msyhbd.ttf",         // Microsoft YaHei Bold
+            
+            // Fallback fonts
+            "C:/Windows/Fonts/tahoma.ttf",         // Tahoma
+            "C:/Windows/Fonts/simsun.ttc"          // SimSun (宋体, fallback for Chinese)
         };
         
         for (const char* path : font_paths) {
@@ -329,29 +363,49 @@ namespace Game {
         double game_start_time_seconds = 0.0;
         bool game_started = false;
         
-        // Timer display (stopwatch)
-        sf::Text timer_text;
-        double current_time_seconds = 0.0;
-        
         // Progress bar (1 minute from 0 to 100%)
         const double PROGRESS_BAR_DURATION_SECONDS = 60.0;  // 1 minute
         double progress_percentage = 0.0;
         sf::RectangleShape progress_bar_background;
         sf::RectangleShape progress_bar_fill;
         
-        // Initialize timer text
+        // Combo counter
+        unsigned int combo_count = 0;
+        sf::Text combo_text;
+        
+        // Score statistics
+        unsigned int perfect_count = 0;
+        unsigned int good_count = 0;
+        unsigned int miss_count = 0;
+        sf::Text score_text;
+        
+        // Initialize progress bar (full width)
+        float progress_bar_width = static_cast<float>(window_width);
+        float progress_bar_height = 20.0f;
+        float progress_bar_x = 0.0f;
+        float progress_bar_y = 40.0f;
+        
+        // Initialize combo text
         if (font_loaded) {
-            timer_text.setFont(default_font);
-            timer_text.setCharacterSize(40);f
-            timer_text.setFillColor(sf::Color::White);
-            timer_text.setPosition(50.0f, 30.0f);  // Top left area
+            combo_text.setFont(default_font);
+            combo_text.setCharacterSize(120);  // Increased to 120
+            combo_text.setFillColor(sf::Color::White);
+            combo_text.setString("0");
+            // Position below judge line
+            sf::FloatRect text_bounds = combo_text.getLocalBounds();
+            combo_text.setOrigin(text_bounds.left + text_bounds.width / 2.0f,
+                               text_bounds.top + text_bounds.height / 2.0f);
+            combo_text.setPosition(window_width / 2.0f, judge_line_y + 50.0f);  // Below judge line
         }
         
-        // Initialize progress bar
-        float progress_bar_width = 300.0f;
-        float progress_bar_height = 20.0f;
-        float progress_bar_x = 300.0f;  // To the right of timer
-        float progress_bar_y = 40.0f;
+        // Initialize score text (below progress bar)
+        if (font_loaded) {
+            score_text.setFont(default_font);
+            score_text.setCharacterSize(160);
+            score_text.setFillColor(sf::Color::White);
+            score_text.setString("Score: 0");
+            score_text.setPosition(10.0f, progress_bar_y + progress_bar_height + 15.0f);  // Below progress bar
+        }
         
         progress_bar_background.setSize(sf::Vector2f(progress_bar_width, progress_bar_height));
         progress_bar_background.setPosition(progress_bar_x, progress_bar_y);
@@ -427,19 +481,7 @@ namespace Game {
             }
             
             // Calculate elapsed time in seconds (double precision)
-            current_time_seconds = (current_time_ms / 1000.0) - game_start_time_seconds;
-            
-            // Update timer display (stopwatch)
-            if (font_loaded) {
-                // Format time as MM:SS.mmm
-                int minutes = static_cast<int>(current_time_seconds) / 60;
-                int seconds = static_cast<int>(current_time_seconds) % 60;
-                int milliseconds = static_cast<int>((current_time_seconds - static_cast<int>(current_time_seconds)) * 1000);
-                
-                char time_str[32];
-                std::sprintf(time_str, "%02d:%02d.%03d", minutes, seconds, milliseconds);
-                timer_text.setString(time_str);
-            }
+            double current_time_seconds = (current_time_ms / 1000.0) - game_start_time_seconds;
             
             // Update progress bar (1 minute from 0 to 100%)
             progress_percentage = (current_time_seconds / PROGRESS_BAR_DURATION_SECONDS) * 100.0;
@@ -448,6 +490,12 @@ namespace Game {
             }
             float fill_width = static_cast<float>(progress_percentage / 100.0 * progress_bar_width);
             progress_bar_fill.setSize(sf::Vector2f(fill_width, progress_bar_height));
+            
+            // Calculate and update score (perfect*10 + good*3 + miss*1)
+            unsigned int current_score = perfect_count * 10 + good_count * 3 + miss_count * 1;
+            if (font_loaded) {
+                score_text.setString("Score: " + std::to_string(current_score));
+            }
             
             // Update judgment display (fade out effect)
             updateJudgmentDisplay(judgment_display, current_time_ms);
@@ -516,6 +564,37 @@ namespace Game {
                         // Show judgment display
                         showJudgment(judgment_display, best_result, current_time_ms,
                                    judge_line_y, window_width, default_font);
+                        
+                        // Update judgment counts
+                        if (best_result == 0) {
+                            // Perfect
+                            perfect_count++;
+                        } else if (best_result == 1) {
+                            // Good
+                            good_count++;
+                        } else if (best_result == 2) {
+                            // Miss
+                            miss_count++;
+                        }
+                        
+                        // Update combo count
+                        if (best_result == 0 || best_result == 1) {
+                            // Perfect or Good: increase combo
+                            combo_count++;
+                        } else if (best_result == 2) {
+                            // Miss: reset combo
+                            combo_count = 0;
+                        }
+                        
+                        // Update combo text display
+                        if (font_loaded) {
+                            combo_text.setString(std::to_string(combo_count));
+                            // Re-center the text
+                            sf::FloatRect text_bounds = combo_text.getLocalBounds();
+                            combo_text.setOrigin(text_bounds.left + text_bounds.width / 2.0f,
+                                               text_bounds.top + text_bounds.height / 2.0f);
+                            combo_text.setPosition(window_width / 2.0f, judge_line_y + 50.0f);
+                        }
                     }
                 }
             }
@@ -534,15 +613,6 @@ namespace Game {
             
             // Clear the window with background color
             window.clear(BACKGROUND_COLOR);
-            
-            // Draw timer (stopwatch) at top left
-            if (font_loaded) {
-                window.draw(timer_text);
-            }
-            
-            // Draw progress bar at top (to the right of timer)
-            window.draw(progress_bar_background);
-            window.draw(progress_bar_fill);
             
             // Draw tracks using SFML rendering
             for (const auto& track : tracks) {
@@ -568,6 +638,20 @@ namespace Game {
             // Draw judgment display if active
             if (judgment_display.is_active && judgment_display.judgment_type >= 0) {
                 window.draw(judgment_display.text);
+            }
+            
+            // Draw progress bar at top - rendered last to be on top
+            window.draw(progress_bar_background);
+            window.draw(progress_bar_fill);
+            
+            // Draw combo count - rendered last to be on top of everything
+            if (font_loaded) {
+                window.draw(combo_text);
+            }
+            
+            // Draw score - rendered last to be on top of everything
+            if (font_loaded) {
+                window.draw(score_text);
             }
             
             // Display everything
