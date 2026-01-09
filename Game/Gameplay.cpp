@@ -7,6 +7,10 @@
 #include <vector>
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
+#include <string>
+#include <SFML/Graphics/Text.hpp>
+#include <SFML/Graphics/Font.hpp>
 
 namespace Game {
     // Constants
@@ -28,12 +32,17 @@ namespace Game {
     static const sf::Color BACKGROUND_COLOR(20, 20, 20);      // Very dark background
     static const sf::Color NOTE_COLOR(100, 150, 255);         // Blue color for notes
     
-    // Judgment result enum
-    enum class Judgment {
-        None,
-        Perfect,
-        Good,
-        Miss
+    // Judgment display structure
+    struct JudgmentDisplay {
+        int judgment_type;  // 0=Perfect, 1=Good, 2=Miss, -1=None
+        float start_time_ms;
+        float fade_duration_ms;  // 1000ms = 1 second
+        sf::Text text;
+        sf::Color base_color;  // Base color without alpha (RGB only)
+        bool is_active;
+        
+        JudgmentDisplay() : judgment_type(-1), start_time_ms(0.0f), 
+                          fade_duration_ms(1000.0f), is_active(false) {}
     };
     
     // Note structure with lifecycle management
@@ -106,8 +115,8 @@ namespace Game {
     }
     
     // Judgment function: detects key press and calculates time difference
-    // Returns judgment result
-    Judgment checkJudgment(
+    // Returns: 0=Perfect, 1=Good, 2=Miss, -1=None
+    int checkJudgment(
         const ActiveNote& note,
         float key_press_time_ms,
         float judge_line_y,
@@ -121,14 +130,105 @@ namespace Game {
         
         // Check if within judgment window
         if (time_diff_ms <= PERFECT_THRESHOLD) {
-            return Judgment::Perfect;
+            return 0;  // Perfect
         } else if (time_diff_ms <= GOOD_THRESHOLD) {
-            return Judgment::Good;
+            return 1;  // Good
         } else if (time_diff_ms <= MISS_THRESHOLD) {
-            return Judgment::Miss;
+            return 2;  // Miss
         }
         
-        return Judgment::None;
+        return -1;  // None
+    }
+    
+    // Display judgment result function
+    // Parameters: judgment_type (0=Perfect, 1=Good, 2=Miss)
+    void showJudgment(
+        JudgmentDisplay& display,
+        int judgment_type,
+        float current_time_ms,
+        float judge_line_y,
+        float window_width,
+        sf::Font& font
+    ) {
+        // Clear previous display
+        display.is_active = false;
+        display.judgment_type = -1;
+        
+        // Set new judgment
+        if (judgment_type >= 0 && judgment_type <= 2) {
+            display.judgment_type = judgment_type;
+            display.start_time_ms = current_time_ms;
+            display.is_active = true;
+            
+            // Set text content and color based on judgment type
+            std::string text_str;
+            switch (judgment_type) {
+                case 0:  // Perfect
+                    text_str = "PERFECT";
+                    display.base_color = sf::Color(255, 215, 0);  // Gold
+                    break;
+                case 1:  // Good
+                    text_str = "GOOD";
+                    display.base_color = sf::Color(50, 205, 50);   // Green
+                    break;
+                case 2:  // Miss
+                    text_str = "MISS";
+                    display.base_color = sf::Color(255, 69, 0);   // Red-Orange
+                    break;
+                default:
+                    return;
+            }
+            
+            // Set up text
+            display.text.setString(text_str);
+            display.text.setFont(font);
+            display.text.setCharacterSize(80);  // Large font size
+            
+            // Center the text horizontally
+            sf::FloatRect text_bounds = display.text.getLocalBounds();
+            display.text.setOrigin(text_bounds.left + text_bounds.width / 2.0f,
+                                  text_bounds.top + text_bounds.height / 2.0f);
+            display.text.setPosition(window_width / 2.0f, judge_line_y - 80.0f);  // Above judge line
+            
+            // Set initial opacity to 50% (127/255)
+            sf::Color initial_color = display.base_color;
+            initial_color.a = 127;  // 50% opacity
+            display.text.setFillColor(initial_color);
+        }
+    }
+    
+    // Update judgment display (fade out effect)
+    void updateJudgmentDisplay(
+        JudgmentDisplay& display,
+        float current_time_ms
+    ) {
+        if (!display.is_active || display.judgment_type < 0) {
+            return;
+        }
+        
+        // Calculate elapsed time
+        float elapsed_ms = current_time_ms - display.start_time_ms;
+        
+        // Check if fade duration has passed
+        if (elapsed_ms >= display.fade_duration_ms) {
+            display.is_active = false;
+            display.judgment_type = -1;
+            return;
+        }
+        
+        // Calculate opacity: start at 50% (127), fade to 100% transparent (0)
+        // Linear interpolation: opacity = 127 * (1 - elapsed / duration)
+        float opacity_ratio = elapsed_ms / display.fade_duration_ms;
+        sf::Uint8 alpha = static_cast<sf::Uint8>(127 * (1.0f - opacity_ratio));
+        
+        // Clamp alpha to valid range [0, 255]
+        if (alpha > 255) alpha = 255;
+        if (opacity_ratio > 1.0f) alpha = 0;
+        
+        // Update text color with new opacity (preserve RGB, update alpha)
+        sf::Color current_color = display.base_color;
+        current_color.a = alpha;
+        display.text.setFillColor(current_color);
     }
     
     void Gameplay() {
@@ -196,43 +296,161 @@ namespace Game {
         judge_line.setPosition(judge_line_x, judge_line_y);
         judge_line.setFillColor(JUDGE_LINE_COLOR);
         
-        // Track space key state to detect key press (not hold)
-        bool space_pressed_this_frame = false;
-        bool space_was_pressed = false;
+        // Load default system font (try Windows system fonts)
+        sf::Font default_font;
+        bool font_loaded = false;
+        
+        // Try to load common Windows system fonts
+        const char* font_paths[] = {
+            "C:/Windows/Fonts/arial.ttf",
+            "C:/Windows/Fonts/calibri.ttf",
+            "C:/Windows/Fonts/msyh.ttf",
+            "C:/Windows/Fonts/simsun.ttc",
+            "C:/Windows/Fonts/tahoma.ttf"
+        };
+        
+        for (const char* path : font_paths) {
+            if (default_font.loadFromFile(path)) {
+                font_loaded = true;
+                break;
+            }
+        }
+        
+        // If no font loaded, create a fallback (text won't display but won't crash)
+        if (!font_loaded) {
+            // Create a minimal font or handle error
+            // For now, we'll proceed - the text just won't display if font fails
+        }
+        
+        // Judgment display
+        JudgmentDisplay judgment_display;
+        
+        // Game start time (in milliseconds, converted to seconds)
+        double game_start_time_seconds = 0.0;
+        bool game_started = false;
+        
+        // Timer display (stopwatch)
+        sf::Text timer_text;
+        double current_time_seconds = 0.0;
+        
+        // Progress bar (1 minute from 0 to 100%)
+        const double PROGRESS_BAR_DURATION_SECONDS = 60.0;  // 1 minute
+        double progress_percentage = 0.0;
+        sf::RectangleShape progress_bar_background;
+        sf::RectangleShape progress_bar_fill;
+        
+        // Initialize timer text
+        if (font_loaded) {
+            timer_text.setFont(default_font);
+            timer_text.setCharacterSize(40);f
+            timer_text.setFillColor(sf::Color::White);
+            timer_text.setPosition(50.0f, 30.0f);  // Top left area
+        }
+        
+        // Initialize progress bar
+        float progress_bar_width = 300.0f;
+        float progress_bar_height = 20.0f;
+        float progress_bar_x = 300.0f;  // To the right of timer
+        float progress_bar_y = 40.0f;
+        
+        progress_bar_background.setSize(sf::Vector2f(progress_bar_width, progress_bar_height));
+        progress_bar_background.setPosition(progress_bar_x, progress_bar_y);
+        progress_bar_background.setFillColor(sf::Color(50, 50, 50));  // Dark gray background
+        progress_bar_background.setOutlineColor(sf::Color::White);
+        progress_bar_background.setOutlineThickness(2.0f);
+        
+        progress_bar_fill.setSize(sf::Vector2f(0.0f, progress_bar_height));
+        progress_bar_fill.setPosition(progress_bar_x, progress_bar_y);
+        progress_bar_fill.setFillColor(sf::Color(0, 200, 255));  // Cyan color
+
+        // Track key states for each track (S, F, H, K)
+        struct TrackKey {
+            sf::Keyboard::Key key;
+            int track_index;
+            bool pressed_this_frame;
+            bool was_pressed;
+        };
+
+        TrackKey track_keys[4] = {
+            {sf::Keyboard::S, 0, false, false},  // S key -> track 0
+            {sf::Keyboard::F, 1, false, false},  // F key -> track 1
+            {sf::Keyboard::H, 2, false, false},  // H key -> track 2
+            {sf::Keyboard::K, 3, false, false}   // K key -> track 3
+        };
         
         // Main game loop
         while (window.isOpen()) {
-            space_pressed_this_frame = false;
-            
+            // Reset key press flags for this frame
+            for (auto& track_key : track_keys) {
+                track_key.pressed_this_frame = false;
+            }
+
             // Handle events using SFML Event system
             sf::Event event;
             while (window.pollEvent(event)) {
                 if (event.type == sf::Event::Closed) {
                     window.close();
                 }
-                
+
                 // Handle keyboard input
                 if (event.type == sf::Event::KeyPressed) {
                     if (event.key.code == sf::Keyboard::Escape) {
                         window.close();
                     }
-                    
-                    // Detect space key press (only on key down, not hold)
-                    if (event.key.code == sf::Keyboard::Space && !space_was_pressed) {
-                        space_pressed_this_frame = true;
-                        space_was_pressed = true;
+
+                    // Detect track key presses (only on key down, not hold)
+                    for (auto& track_key : track_keys) {
+                        if (event.key.code == track_key.key && !track_key.was_pressed) {
+                            track_key.pressed_this_frame = true;
+                            track_key.was_pressed = true;
+                        }
                     }
                 }
-                
+
                 if (event.type == sf::Event::KeyReleased) {
-                    if (event.key.code == sf::Keyboard::Space) {
-                        space_was_pressed = false;
+                    // Reset key states when released
+                    for (auto& track_key : track_keys) {
+                        if (event.key.code == track_key.key) {
+                            track_key.was_pressed = false;
+                        }
                     }
                 }
             }
             
             // Get current time in milliseconds
             float current_time_ms = static_cast<float>(timer::current_timing.count());
+            
+            // Initialize game start time on first frame
+            if (!game_started) {
+                game_start_time_seconds = current_time_ms / 1000.0;
+                game_started = true;
+            }
+            
+            // Calculate elapsed time in seconds (double precision)
+            current_time_seconds = (current_time_ms / 1000.0) - game_start_time_seconds;
+            
+            // Update timer display (stopwatch)
+            if (font_loaded) {
+                // Format time as MM:SS.mmm
+                int minutes = static_cast<int>(current_time_seconds) / 60;
+                int seconds = static_cast<int>(current_time_seconds) % 60;
+                int milliseconds = static_cast<int>((current_time_seconds - static_cast<int>(current_time_seconds)) * 1000);
+                
+                char time_str[32];
+                std::sprintf(time_str, "%02d:%02d.%03d", minutes, seconds, milliseconds);
+                timer_text.setString(time_str);
+            }
+            
+            // Update progress bar (1 minute from 0 to 100%)
+            progress_percentage = (current_time_seconds / PROGRESS_BAR_DURATION_SECONDS) * 100.0;
+            if (progress_percentage > 100.0) {
+                progress_percentage = 100.0;
+            }
+            float fill_width = static_cast<float>(progress_percentage / 100.0 * progress_bar_width);
+            progress_bar_fill.setSize(sf::Vector2f(fill_width, progress_bar_height));
+            
+            // Update judgment display (fade out effect)
+            updateJudgmentDisplay(judgment_display, current_time_ms);
             
             // Spawn new notes when their bottom edge enters screen
             for (const auto& template_note : note_templates) {
@@ -261,51 +479,44 @@ namespace Game {
                 }
             }
             
-            // Check judgment when space key is pressed
-            if (space_pressed_this_frame) {
-                float best_time_diff = MISS_THRESHOLD + 1.0f;
-                ActiveNote* best_note = nullptr;
-                Judgment best_result = Judgment::None;
-                
-                // Find the note closest to judge line among all active notes on screen
-                for (auto& note : active_notes) {
-                    if (note.isOnScreen(current_time_ms, window_height)) {
-                        Judgment result = checkJudgment(
-                            note,
-                            current_time_ms,
-                            judge_line_y,
-                            note.pixels_per_millisecond
-                        );
-                        
-                        if (result != Judgment::None) {
-                            // Calculate time difference to find closest note
-                            float expected_time = note.getJudgeTime(judge_line_y);
-                            float time_diff = std::abs(current_time_ms - expected_time);
-                            
-                            if (time_diff < best_time_diff) {
-                                best_time_diff = time_diff;
-                                best_note = &note;
-                                best_result = result;
+            // Check judgment for each track key press
+            for (auto& track_key : track_keys) {
+                if (track_key.pressed_this_frame) {
+                    float best_time_diff = MISS_THRESHOLD + 1.0f;
+                    ActiveNote* best_note = nullptr;
+                    int best_result = -1;
+
+                    // Find the note closest to judge line among active notes on this specific track
+                    for (auto& note : active_notes) {
+                        // Only check notes on the same track as the pressed key
+                        if (note.track_index == track_key.track_index && note.isOnScreen(current_time_ms, window_height)) {
+                            int result = checkJudgment(
+                                note,
+                                current_time_ms,
+                                judge_line_y,
+                                note.pixels_per_millisecond
+                            );
+
+                            if (result >= 0) {
+                                // Calculate time difference to find closest note
+                                float expected_time = note.getJudgeTime(judge_line_y);
+                                float time_diff = std::abs(current_time_ms - expected_time);
+
+                                if (time_diff < best_time_diff) {
+                                    best_time_diff = time_diff;
+                                    best_note = &note;
+                                    best_result = result;
+                                }
                             }
                         }
                     }
-                }
-                
-                // Process the best judgment found
-                if (best_result != Judgment::None && best_note != nullptr) {
-                    // Handle judgment result (can add score, effects, etc.)
-                    // You can add a flag to ActiveNote to track if it's been judged
-                    // and remove it from active_notes to prevent double judgment
-                    
-                    // Example: Print judgment result
-                    // std::cout << "Judgment: ";
-                    // switch (best_result) {
-                    //     case Judgment::Perfect: std::cout << "PERFECT"; break;
-                    //     case Judgment::Good: std::cout << "GOOD"; break;
-                    //     case Judgment::Miss: std::cout << "MISS"; break;
-                    //     default: break;
-                    // }
-                    // std::cout << " (Time diff: " << best_time_diff << "ms)" << std::endl;
+
+                    // Process the best judgment found for this track
+                    if (best_result >= 0 && best_note != nullptr && font_loaded) {
+                        // Show judgment display
+                        showJudgment(judgment_display, best_result, current_time_ms,
+                                   judge_line_y, window_width, default_font);
+                    }
                 }
             }
             
@@ -323,6 +534,15 @@ namespace Game {
             
             // Clear the window with background color
             window.clear(BACKGROUND_COLOR);
+            
+            // Draw timer (stopwatch) at top left
+            if (font_loaded) {
+                window.draw(timer_text);
+            }
+            
+            // Draw progress bar at top (to the right of timer)
+            window.draw(progress_bar_background);
+            window.draw(progress_bar_fill);
             
             // Draw tracks using SFML rendering
             for (const auto& track : tracks) {
@@ -344,6 +564,11 @@ namespace Game {
             
             // Draw judge line (on top of tracks)
             window.draw(judge_line);
+            
+            // Draw judgment display if active
+            if (judgment_display.is_active && judgment_display.judgment_type >= 0) {
+                window.draw(judgment_display.text);
+            }
             
             // Display everything
             window.display();
