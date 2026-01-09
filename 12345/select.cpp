@@ -5,6 +5,10 @@
 #include<string>
 #include<cmath>
 
+// 全局变量，用于存储歌曲信息
+std::string name_of_song;
+std::string add_of_audio;
+
 // 歌曲结构体
 typedef struct Song {
     std::string name;
@@ -13,6 +17,11 @@ typedef struct Song {
     std::string audioPath;
     int highScore;
 } Song;
+
+// Gameplay函数声明
+namespace Game {
+    void Gameplay();
+}
 
 /**
  * 歌曲选择函数
@@ -170,6 +179,12 @@ int select(sf::RenderWindow& window, sf::Font& songFont, sf::Cursor& handCursor,
                         );
                         
                         if (startButtonRect.contains(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y))) {
+                            // 设置全局变量，存储选中歌曲的名字和音频地址
+                            if (!songs.empty() && selectedSongIndex >= 0 && selectedSongIndex < songs.size()) {
+                                name_of_song = songs[selectedSongIndex].name;
+                                add_of_audio = songs[selectedSongIndex].audioPath;
+                            }
+                            
                             // 开始游戏，设置为全屏模式
                             window.create(sf::VideoMode::getFullscreenModes()[0], "Music Bang", sf::Style::Fullscreen);
                             showFullscreenPrompt = false;
@@ -476,6 +491,11 @@ int select(sf::RenderWindow& window, sf::Font& songFont, sf::Cursor& handCursor,
         }
         
         window.display();
+    }
+    
+    // 调用游戏主函数
+    if (songSelected) {
+        Game::Gameplay();
     }
     
     return selectedSongIndex;
