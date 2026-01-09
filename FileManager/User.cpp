@@ -35,23 +35,15 @@ namespace FileManager {
         std::filesystem::path user_dir = std::filesystem::path("users") / username;
         std::filesystem::path user_file = user_dir / "user.data";
 
-        try {
-            // 检查文件是否存在
-            if (std::filesystem::exists(user_file)) {
-                // 使用 JsonParser 解析文件
-                user_data = Tools::JsonParser::parseFromFile(user_file.string());
-            } else {
-                // 文件不存在，创建默认用户数据
-                user_data = nlohmann::json::object();
-                user_data["username"] = username;
-                user_data["scores"] = nlohmann::json::object();
-            }
-        } catch (const Tools::ParseException& e) {
-            throw UserException("Parse error: " + std::string(e.what()));
-        } catch (const Tools::FileReadException& e) {
-            throw UserException("File read error: " + std::string(e.what()));
-        } catch (const std::exception& e) {
-            throw UserException("Unexpected error: " + std::string(e.what()));
+        // 检查文件是否存在
+        if (std::filesystem::exists(user_file)) {
+            // 使用 JsonParser 解析文件
+            user_data = Tools::JsonParser::parseFromFile(user_file.string());
+        } else {
+            // 文件不存在，创建默认用户数据
+            user_data = nlohmann::json::object();
+            user_data["username"] = username;
+            user_data["scores"] = nlohmann::json::object();
         }
     }
 
@@ -66,18 +58,12 @@ namespace FileManager {
         std::filesystem::path user_dir = std::filesystem::path("users") / save_username;
         std::filesystem::path user_file = user_dir / "user.data";
 
-        try {
-            // 确保目录存在
-            std::filesystem::create_directories(user_dir);
+        // 确保目录存在
+        std::filesystem::create_directories(user_dir);
 
-            // 使用 JsonParser 保存文件
-            Tools::JsonParser::saveToFile(user_data, user_file.string());
-            this->username = save_username;
-        } catch (const Tools::FileWriteException& e) {
-            throw UserException("File write error: " + std::string(e.what()));
-        } catch (const std::exception& e) {
-            throw UserException("Unexpected error: " + std::string(e.what()));
-        }
+        // 使用 JsonParser 保存文件
+        Tools::JsonParser::saveToFile(user_data, user_file.string());
+        this->username = save_username;
     }
 
     // 创建新用户
