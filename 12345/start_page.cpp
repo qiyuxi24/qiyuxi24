@@ -3,18 +3,8 @@
 #include<string>
 #include<cmath>
 #include<iostream>
-
-// 歌曲结构体
-typedef struct Song {
-    std::string name;
-    std::string imagePath;
-    std::string thumbnailPath;
-    std::string audioPath;
-    int highScore;
-} Song;
-
-// 歌曲选择函数声明
-int select(sf::RenderWindow& window, sf::Font& songFont, sf::Cursor& handCursor, sf::Cursor& arrowCursor);
+#include "start_page.h"
+#include "game.h"
 
 /**
  * 主菜单页面函数

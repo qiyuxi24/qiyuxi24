@@ -4,24 +4,11 @@
 #include<vector>
 #include<string>
 #include<cmath>
+#include "select.h"
 
-// 全局变量，用于存储歌曲信息
+// 全局变量定义
 std::string name_of_song;
 std::string add_of_audio;
-
-// 歌曲结构体
-typedef struct Song {
-    std::string name;
-    std::string imagePath;
-    std::string thumbnailPath;
-    std::string audioPath;
-    int highScore;
-} Song;
-
-// Gameplay函数声明
-namespace Game {
-    void Gameplay();
-}
 
 /**
  * 歌曲选择函数
