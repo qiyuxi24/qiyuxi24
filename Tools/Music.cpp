@@ -105,6 +105,7 @@ namespace music {
         cv.notify_one();
     }
     
+<<<<<<< Updated upstream
     // 暂停播放音乐
     void pause() {
         std::lock_guard<std::mutex> lock(music_mutex);
@@ -119,6 +120,8 @@ namespace music {
         }
     }
     
+=======
+>>>>>>> Stashed changes
     // 获取音乐播放状态
     sf::Music::Status getStatus() {
         std::lock_guard<std::mutex> lock(music_mutex);
@@ -135,6 +138,19 @@ namespace music {
         return std::chrono::milliseconds(0);
     }
     
+<<<<<<< Updated upstream
+=======
+    // 获取音乐总时长（毫秒）
+    std::chrono::milliseconds getDuration() {
+        std::lock_guard<std::mutex> lock(music_mutex);
+        if (music_loaded.load()) {
+            auto duration = music_instance.getDuration();
+            return std::chrono::milliseconds(duration.asMilliseconds());
+        }
+        return std::chrono::milliseconds(0);
+    }
+    
+>>>>>>> Stashed changes
     // 设置音量 (0-100)
     void setVolume(float volume) {
         std::lock_guard<std::mutex> lock(music_mutex);

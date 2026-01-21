@@ -4,6 +4,7 @@
 
 #include "Gameplay.h"
 #include "../Tools/Timer.h"
+<<<<<<< Updated upstream
 #include <vector>
 #include <algorithm>
 #include <cmath>
@@ -18,6 +19,21 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 #include <SFML/System.hpp>
+=======
+#include "../Tools/Music.h"
+#include "../FileManager/Beatmap.h"
+#include "../FileManager/Config.h"
+#include "../FileManager/Logger.h"
+#include "../Menu/select.h"  // 用于访问全局变量 chart_path
+#include <vector>
+#include <algorithm>
+#include <cmath>
+#include <filesystem>
+#include <stdexcept>
+#include <string>
+#include <SFML/Graphics/Text.hpp>
+#include <SFML/Graphics/Font.hpp>
+>>>>>>> Stashed changes
 
 namespace Game {
     // Constants
@@ -26,11 +42,20 @@ namespace Game {
     static const float TRACK_MARGIN_RATIO = 0.025f;  // 2.5% margin on each side
     static const float JUDGE_LINE_Y_RATIO = 0.85f;  // Judge line at 85% from top
     static const float JUDGE_LINE_HEIGHT = 3.0f;     // 3 pixels thick
+<<<<<<< Updated upstream
     
     // Judgment thresholds (in milliseconds)
     static const float PERFECT_THRESHOLD = 20.0f;
     static const float GOOD_THRESHOLD = 40.0f;
     static const float MISS_THRESHOLD = 100.0f;
+=======
+    static const float DEFAULT_NOTE_SPEED = 1.5f;    // 默认音符速度（像素/毫秒）
+    
+    // Judgment thresholds (in milliseconds)
+    static const float PERFECT_THRESHOLD = 40.0f;
+    static const float GOOD_THRESHOLD = 80.0f;
+    static const float MISS_THRESHOLD = 200.0f;
+>>>>>>> Stashed changes
     
     // Colors
     static const sf::Color TRACK_COLOR(30, 30, 30);           // Dark gray for tracks
@@ -197,9 +222,15 @@ namespace Game {
                                   text_bounds.top + text_bounds.height / 2.0f);
             display.text.setPosition(window_width / 2.0f, judge_line_y - 80.0f);  // Above judge line
             
+<<<<<<< Updated upstream
             // Set initial opacity to 50% (127/255)
             sf::Color initial_color = display.base_color;
             initial_color.a = 127;  // 50% opacity
+=======
+            // Set initial opacity to 100% (255/255) for maximum visibility
+            sf::Color initial_color = display.base_color;
+            initial_color.a = 255;  // 100% opacity
+>>>>>>> Stashed changes
             display.text.setFillColor(initial_color);
         }
     }
@@ -223,10 +254,17 @@ namespace Game {
             return;
         }
         
+<<<<<<< Updated upstream
         // Calculate opacity: start at 50% (127), fade to 100% transparent (0)
         // Linear interpolation: opacity = 127 * (1 - elapsed / duration)
         float opacity_ratio = elapsed_ms / display.fade_duration_ms;
         sf::Uint8 alpha = static_cast<sf::Uint8>(127 * (1.0f - opacity_ratio));
+=======
+        // Calculate opacity: start at 100% (255), fade to 100% transparent (0)
+        // Linear interpolation: opacity = 255 * (1 - elapsed / duration)
+        float opacity_ratio = elapsed_ms / display.fade_duration_ms;
+        sf::Uint8 alpha = static_cast<sf::Uint8>(255 * (1.0f - opacity_ratio));
+>>>>>>> Stashed changes
         
         // Clamp alpha to valid range [0, 255]
         if (alpha > 255) alpha = 255;
@@ -237,8 +275,229 @@ namespace Game {
         current_color.a = alpha;
         display.text.setFillColor(current_color);
     }
+<<<<<<< Updated upstream
     
     void Gameplay() {
+=======
+
+    // 音符模板结构体
+    struct NoteTemplate {
+        unsigned int track_index;
+        float pixels_per_millisecond;
+        float length;
+        float spawn_time_ms;  // When bottom edge should enter screen
+        float judge_time_ms;  // When bottom edge should reach judge line (relative to music start)
+    };
+    
+    // 对象池类：管理音符模板
+    class NoteTemplatePool {
+    private:
+        std::vector<NoteTemplate> pool;
+        
+    public:
+        NoteTemplatePool() {}
+        
+        // 清空对象池
+        void clear() {
+            pool.clear();
+        }
+        
+        // 添加音符模板到对象池
+        void addTemplate(const NoteTemplate& template_note) {
+            pool.push_back(template_note);
+        }
+        
+        // 批量添加音符模板
+        void addTemplates(const std::vector<NoteTemplate>& templates) {
+            pool.insert(pool.end(), templates.begin(), templates.end());
+        }
+        
+        // 获取所有模板（用于遍历）
+        const std::vector<NoteTemplate>& getTemplates() const {
+            return pool;
+        }
+        
+        // 获取模板数量
+        size_t size() const {
+            return pool.size();
+        }
+        
+        // 按生成时间排序（用于优化查找）
+        void sortBySpawnTime() {
+            std::sort(pool.begin(), pool.end(), 
+                [](const NoteTemplate& a, const NoteTemplate& b) {
+                    return a.spawn_time_ms < b.spawn_time_ms;
+                });
+        }
+        
+        // 调整所有音符的生成时间（用于时间同步）
+        void adjustSpawnTime(float offset_ms) {
+            for (auto& template_note : pool) {
+                template_note.spawn_time_ms += offset_ms;
+            }
+        }
+    };
+    
+    // 从谱面加载音符数据到对象池
+    void playNotesFromBeatmap(const std::string& chart_path, NoteTemplatePool& pool, float window_height) {
+        try {
+            // 加载谱面
+            FileManager::Beatmap beatmap(chart_path);
+            
+            if (!beatmap.isLoaded()) {
+                throw std::runtime_error("Failed to load beatmap");
+            }
+            
+            // 获取元数据
+            const auto& meta = beatmap.getMetadata();
+            const auto& song = meta.at("song");
+            
+            // 获取时间数据（用于处理BPM变化和获取BPM）
+            const auto& time_data = beatmap.getTimeData();
+            
+            // 获取音符数据
+            const auto& note_data = beatmap.getNoteData();
+            
+            // 获取 BPM：优先从 time[0].bpm 获取，如果不存在则从 meta.song.bpm 获取
+            double bpm = 120.0; // 默认 BPM
+            if (time_data.is_array() && !time_data.empty() && time_data[0].contains("bpm") && time_data[0]["bpm"].is_number()) {
+                bpm = time_data[0]["bpm"].get<double>();
+            } else if (song.contains("bpm") && song["bpm"].is_number()) {
+                bpm = song["bpm"].get<double>();
+            }
+            
+            // 从配置读取音符速度，默认值为 DEFAULT_NOTE_SPEED
+            float base_note_speed = DEFAULT_NOTE_SPEED;
+            try {
+                FileManager::Config config;
+                config.load();
+                if (config.has("base_note_speed") && config.get("base_note_speed").is_number()) {
+                    base_note_speed = config.get("base_note_speed").get<float>();
+                }
+            } catch (...) {
+                // 如果读取配置失败，使用默认值
+            }
+            
+            // 计算基础速度（像素/毫秒）
+            // 假设音符从屏幕顶部到底部需要一定时间
+            // 这里使用一个合理的默认速度，可以根据BPM调整
+            float base_speed = base_note_speed;  // 默认速度，可以根据BPM和窗口高度调整
+            if (bpm > 0 && window_height > 0) {
+                // 根据BPM计算速度：BPM越高，速度越快
+                // 假设在60BPM时速度为base_note_speed，按比例调整
+                base_speed = base_note_speed * (bpm / 60.0f);
+            }
+            
+            // 清空对象池
+            pool.clear();
+            
+            // 解析音符数据 - Malody 格式: [{"beat":[x,y,z],"column":c}, ...]
+            // beat 时间计算: x + y/z 节拍
+            if (note_data.is_array()) {
+                for (const auto& note : note_data) {
+                    try {
+                        NoteTemplate template_note;
+                        
+                        // Malody 格式: {"beat": [x, y, z], "column": 列索引, "endbeat": [结束节拍数组]}
+                        if (!note.contains("beat") || !note.contains("column")) {
+                            continue; // 跳过不符合格式的音符
+                        }
+                        
+                        unsigned int column = note.at("column").get<unsigned int>();
+                        
+                        // 将 beat 数组转换为总节拍数
+                        auto beat_array = note.at("beat");
+                        if (!beat_array.is_array() || beat_array.size() < 3) {
+                            continue; // 跳过无效的 beat 数据
+                        }
+                        
+                        int x = beat_array[0].get<int>();
+                        int y = beat_array[1].get<int>();
+                        int z = beat_array[2].get<int>();
+                        
+                        // 转换为总节拍数：x + y/z
+                        double total_beats = x + static_cast<double>(y) / static_cast<double>(z);
+                        
+                        // 计算结束节拍
+                        bool has_endbeat = false;
+                        double end_total_beats = total_beats;
+                        if (note.contains("endbeat") && note["endbeat"].is_array()) {
+                            auto endbeat_array = note["endbeat"];
+                            if (endbeat_array.size() >= 3) {
+                                int end_x = endbeat_array[0].get<int>();
+                                int end_y = endbeat_array[1].get<int>();
+                                int end_z = endbeat_array[2].get<int>();
+                                end_total_beats = end_x + static_cast<double>(end_y) / static_cast<double>(end_z);
+                                has_endbeat = true;
+                            }
+                        }
+                        
+                        // 将节拍转换为时间（毫秒）
+                        double note_time_ms = (total_beats / bpm) * 60000.0;  // 节拍转毫秒
+                        
+                        // 计算音符长度（像素）
+                        double note_length_pixels;
+                        if (has_endbeat) {
+                            double end_time_ms = (end_total_beats / bpm) * 60000.0;
+                            double note_length_ms = end_time_ms - note_time_ms;
+                            note_length_pixels = note_length_ms * static_cast<double>(base_speed);
+                        } else {
+                            // 如果没有 endbeat，使用默认长度 100.0f 像素
+                            note_length_pixels = 100.0;
+                        }
+                        
+                        // 计算生成时间
+                        double judge_line_y = static_cast<double>(window_height) * JUDGE_LINE_Y_RATIO;
+                        double distance_to_judge = judge_line_y + note_length_pixels;
+                        double spawn_time_ms = note_time_ms - (distance_to_judge / static_cast<double>(base_speed));
+                        
+                        template_note.track_index = column % NUM_TRACKS;
+                        template_note.pixels_per_millisecond = base_speed;
+                        template_note.length = static_cast<float>(note_length_pixels);
+                        template_note.spawn_time_ms = static_cast<float>(spawn_time_ms);
+                        template_note.judge_time_ms = static_cast<float>(note_time_ms);  // 保存判定时间（相对于音乐开始）
+                        
+                        pool.addTemplate(template_note);
+                    } catch (const std::exception& e) {
+                        // 跳过无法解析的音符，继续处理下一个
+                        FileManager::Logger::error("Failed to parse note in playNotesFromBeatmap: " + std::string(e.what()));
+                        continue;
+                    }
+                }
+            }
+            
+            // 按生成时间排序，优化后续查找
+            pool.sortBySpawnTime();
+            
+        } catch (const FileManager::BeatmapException& e) {
+            // 如果加载失败，使用默认测试音符
+            FileManager::Logger::error("Failed to load beatmap in playNotesFromBeatmap: " + std::string(e.what()) + ". Using default test notes.");
+            pool.clear();
+            // 计算默认测试音符的判定时间（假设判定时间 = spawn_time + 距离/速度）
+            double judge_line_y = static_cast<double>(window_height) * JUDGE_LINE_Y_RATIO;
+            double distance_to_judge = judge_line_y + 100.0;
+            double judge_time_offset = distance_to_judge / static_cast<double>(DEFAULT_NOTE_SPEED);
+            pool.addTemplate({0, DEFAULT_NOTE_SPEED, 100.0f, 1000.0f, 1000.0f + static_cast<float>(judge_time_offset)});
+            pool.addTemplate({1, DEFAULT_NOTE_SPEED, 100.0f, 2000.0f, 2000.0f + static_cast<float>(judge_time_offset)});
+            pool.addTemplate({2, DEFAULT_NOTE_SPEED, 100.0f, 3000.0f, 3000.0f + static_cast<float>(judge_time_offset)});
+            pool.addTemplate({3, DEFAULT_NOTE_SPEED, 100.0f, 4000.0f, 4000.0f + static_cast<float>(judge_time_offset)});
+        } catch (const std::exception& e) {
+            // 处理其他异常
+            FileManager::Logger::error("Unexpected error in playNotesFromBeatmap: " + std::string(e.what()) + ". Using default test notes.");
+            pool.clear();
+            // 计算默认测试音符的判定时间（假设判定时间 = spawn_time + 距离/速度）
+            double judge_line_y = static_cast<double>(window_height) * JUDGE_LINE_Y_RATIO;
+            double distance_to_judge = judge_line_y + 100.0;
+            double judge_time_offset = distance_to_judge / static_cast<double>(DEFAULT_NOTE_SPEED);
+            pool.addTemplate({0, DEFAULT_NOTE_SPEED, 100.0f, 1000.0f, 1000.0f + static_cast<float>(judge_time_offset)});
+            pool.addTemplate({1, DEFAULT_NOTE_SPEED, 100.0f, 2000.0f, 2000.0f + static_cast<float>(judge_time_offset)});
+            pool.addTemplate({2, DEFAULT_NOTE_SPEED, 100.0f, 3000.0f, 3000.0f + static_cast<float>(judge_time_offset)});
+            pool.addTemplate({3, DEFAULT_NOTE_SPEED, 100.0f, 4000.0f, 4000.0f + static_cast<float>(judge_time_offset)});
+        }
+    }
+
+    void Gameplay(const std::string& chart_path_param) {
+>>>>>>> Stashed changes
         // Initialize timer
         timer::initialize();
         
@@ -267,6 +526,7 @@ namespace Game {
         // Judge line position
         float judge_line_y = window_height * JUDGE_LINE_Y_RATIO;
         
+<<<<<<< Updated upstream
         // Note pool: All possible notes (can be loaded from beatmap)
         struct NoteTemplate {
             unsigned int track_index;
@@ -281,6 +541,78 @@ namespace Game {
         note_templates.push_back({1, 3.0f, 100.0f, 2000.0f});  // Track 1, spawns at 2 seconds
         note_templates.push_back({2, 3.0f, 100.0f, 3000.0f});  // Track 2, spawns at 3 seconds
         note_templates.push_back({3, 3.0f, 100.0f, 4000.0f});  // Track 3, spawns at 4 seconds
+=======
+        // 音符对象池：管理所有音符模板
+        NoteTemplatePool note_pool;
+        
+        // 从谱面加载音符：优先使用传入的参数，如果为空则使用全局变量，最后使用默认值
+        std::string chart_path_to_use = chart_path_param;
+        if (chart_path_to_use.empty()) {
+            chart_path_to_use = chart_path;  // 使用全局变量
+        }
+        if (chart_path_to_use.empty()) {
+            chart_path_to_use = "beatmap/example/chart.mc";  // 默认路径（回退方案）
+        }
+        playNotesFromBeatmap(chart_path_to_use, note_pool, static_cast<float>(window_height));
+        
+        // Progress bar - duration will be set from music duration
+        double progress_bar_duration_seconds = 60.0;  // Default, will be updated from music
+        
+        // 获取当前时间作为游戏开始时间
+        auto game_start_time = timer::current_timing;
+        
+        // 找到第一个音符的判定时间（相对于音乐开始的时间，单位：毫秒）
+        // 第一个音符的 judge_time_ms 就是它下边界触碰到检测线的时间（相对于音乐开始）
+        float first_note_judge_time_ms = 0.0f;
+        float first_note_speed = DEFAULT_NOTE_SPEED;
+        const std::vector<NoteTemplate>& note_templates_temp = note_pool.getTemplates();
+        if (!note_templates_temp.empty()) {
+            first_note_judge_time_ms = note_templates_temp[0].judge_time_ms;
+            first_note_speed = note_templates_temp[0].pixels_per_millisecond;
+        }
+        
+        // 计算滑块下落时间：从屏幕顶部到检测线的时间
+        // 滑块下落时间 = 检测线位置 / 速度
+        float note_fall_time_ms = judge_line_y / first_note_speed;
+        
+        // 计算音乐开始时间：取消延时，音乐立即开始
+        auto music_start_time = game_start_time;
+        
+        // 调整所有音符的 spawn_time_ms，使其相对于 timer
+        // 原来的 spawn_time_ms 是相对于音乐开始的，现在需要转换为相对于 timer 的
+        // 新的 spawn_time_ms = 原来的 spawn_time_ms + game_start_time
+        // 取消所有延时，直接使用 game_start_time
+        float time_offset_ms = static_cast<float>(game_start_time.count());
+        note_pool.adjustSpawnTime(time_offset_ms);
+        
+        try {
+            // 加载 Beatmap 以获取音乐路径
+            FileManager::Beatmap beatmap(chart_path_to_use);
+            if (beatmap.isLoaded()) {
+                std::string music_path = beatmap.getMusicPath();
+                if (music::loadAndPlay(music_path, music_start_time)) {
+                    FileManager::Logger::info("Music loaded and scheduled to play: " + music_path);
+                    FileManager::Logger::info("First note judge time (relative to music): " + std::to_string(first_note_judge_time_ms) + "ms");
+                    FileManager::Logger::info("Music start time (timer): " + std::to_string(music_start_time.count()) + "ms");
+                    FileManager::Logger::info("Game start time (timer): " + std::to_string(game_start_time.count()) + "ms");
+                    // Get music duration for progress bar
+                    auto music_duration_ms = music::getDuration();
+                    if (music_duration_ms.count() > 0) {
+                        progress_bar_duration_seconds = music_duration_ms.count() / 1000.0;
+                    }
+                } else {
+                    FileManager::Logger::error("Failed to load music file: " + music_path);
+                }
+            } else {
+                FileManager::Logger::error("Failed to load beatmap for music path: " + chart_path_to_use);
+            }
+        } catch (const std::exception& e) {
+            FileManager::Logger::error("Error loading music in Gameplay: " + std::string(e.what()));
+        }
+        
+        // 获取音符模板列表（用于后续遍历）
+        const std::vector<NoteTemplate>& note_templates = note_pool.getTemplates();
+>>>>>>> Stashed changes
         
         // Active notes on screen
         std::vector<ActiveNote> active_notes;
@@ -304,6 +636,7 @@ namespace Game {
         judge_line.setPosition(judge_line_x, judge_line_y);
         judge_line.setFillColor(JUDGE_LINE_COLOR);
         
+<<<<<<< Updated upstream
         // Load default system font (try Windows system fonts)
         sf::Font default_font;
         bool font_loaded = false;
@@ -316,16 +649,39 @@ namespace Game {
             "C:/Windows/Fonts/segoeuil.ttf",       // Segoe UI Light (elegant)
             "C:/Windows/Fonts/consola.ttf",        // Consolas (monospace, crisp for games)
             "C:/Windows/Fonts/consolab.ttf",       // Consolas Bold
+=======
+        // Load default system font (try Windows system fonts with extensive fallback list)
+        sf::Font default_font;
+        bool font_loaded = false;
+        
+        // Try to load system fonts (prioritized by availability and aesthetics)
+        // This extensive list ensures we can find at least one working font on Windows
+        const char* font_paths[] = {
+            // Premium modern fonts (best looking, Windows 10/11 default)
+            "C:/Windows/Fonts/segoeui.ttf",        // Segoe UI (Windows 10/11 default, clean and modern)
+            "C:/Windows/Fonts/segoeuib.ttf",       // Segoe UI Bold
+            "C:/Windows/Fonts/segoeuil.ttf",       // Segoe UI Light
+            
+            // Monospace fonts (crisp for games)
+            "C:/Windows/Fonts/consola.ttf",        // Consolas (monospace, crisp for games)
+            "C:/Windows/Fonts/consolab.ttf",       // Consolas Bold
+            
+            // Readable modern fonts
+>>>>>>> Stashed changes
             "C:/Windows/Fonts/verdana.ttf",        // Verdana (very readable, modern)
             "C:/Windows/Fonts/verdanab.ttf",       // Verdana Bold
             "C:/Windows/Fonts/trebuc.ttf",         // Trebuchet MS (modern, friendly)
             "C:/Windows/Fonts/trebucbd.ttf",       // Trebuchet MS Bold
+<<<<<<< Updated upstream
             "C:/Windows/Fonts/georgia.ttf",        // Georgia (elegant serif)
             "C:/Windows/Fonts/georgiab.ttf",       // Georgia Bold
+=======
+>>>>>>> Stashed changes
             
             // Game-style fonts
             "C:/Windows/Fonts/impact.ttf",         // Impact (bold, striking for game UI)
             "C:/Windows/Fonts/framd.ttf",          // Franklin Gothic Medium
+<<<<<<< Updated upstream
             "C:/Windows/Fonts/framdit.ttf",        // Franklin Gothic Medium Italic
             
             // Modern UI fonts
@@ -346,25 +702,87 @@ namespace Game {
         for (const char* path : font_paths) {
             if (default_font.loadFromFile(path)) {
                 font_loaded = true;
+=======
+            
+            // Modern UI fonts
+            "C:/Windows/Fonts/calibri.ttf",        // Calibri (modern sans-serif)
+            "C:/Windows/Fonts/calibrib.ttf",       // Calibri Bold
+            "C:/Windows/Fonts/arial.ttf",          // Arial (classic, reliable)
+            "C:/Windows/Fonts/arialbd.ttf",        // Arial Bold
+            
+            // Chinese fonts (for better Unicode support)
+            "C:/Windows/Fonts/msyh.ttf",           // Microsoft YaHei (微软雅黑)
+            "C:/Windows/Fonts/msyhbd.ttf",         // Microsoft YaHei Bold
+            
+            // Fallback fonts (most common, should always exist)
+            "C:/Windows/Fonts/tahoma.ttf",         // Tahoma
+            "C:/Windows/Fonts/simsun.ttc",         // SimSun (宋体, fallback for Chinese)
+            
+            // Additional fallbacks
+            "C:/Windows/Fonts/cour.ttf",           // Courier New
+            "C:/Windows/Fonts/courbd.ttf",         // Courier New Bold
+            "C:/Windows/Fonts/times.ttf",          // Times New Roman
+            "C:/Windows/Fonts/timesbd.ttf"         // Times New Roman Bold
+        };
+        
+        // Try to load fonts in order
+        for (const char* path : font_paths) {
+            if (default_font.loadFromFile(path)) {
+                font_loaded = true;
+                FileManager::Logger::info("Font loaded successfully: " + std::string(path));
+>>>>>>> Stashed changes
                 break;
             }
         }
         
+<<<<<<< Updated upstream
         // If no font loaded, create a fallback (text won't display but won't crash)
         if (!font_loaded) {
             // Create a minimal font or handle error
             // For now, we'll proceed - the text just won't display if font fails
+=======
+        // If no font loaded, try alternative paths (for different Windows versions)
+        if (!font_loaded) {
+            // Try alternative font directory paths
+            const char* alt_paths[] = {
+                "C:/Windows/Fonts/arial.ttf",
+                "C:/Windows/Fonts/calibri.ttf",
+                "C:/Windows/Fonts/tahoma.ttf"
+            };
+            
+            for (const char* path : alt_paths) {
+                if (default_font.loadFromFile(path)) {
+                    font_loaded = true;
+                    FileManager::Logger::info("Font loaded from alternative path: " + std::string(path));
+                    break;
+                }
+            }
+        }
+        
+        // Final fallback: log warning but continue (text won't display but game won't crash)
+        if (!font_loaded) {
+            FileManager::Logger::error("Failed to load any system font. Text display will be disabled.");
+            FileManager::Logger::error("Please ensure Windows Fonts directory is accessible at C:/Windows/Fonts/");
+>>>>>>> Stashed changes
         }
         
         // Judgment display
         JudgmentDisplay judgment_display;
+<<<<<<< Updated upstream
         
+=======
+
+>>>>>>> Stashed changes
         // Game start time (in milliseconds, converted to seconds)
         double game_start_time_seconds = 0.0;
         bool game_started = false;
         
+<<<<<<< Updated upstream
         // Progress bar (1 minute from 0 to 100%)
         const double PROGRESS_BAR_DURATION_SECONDS = 60.0;  // 1 minute
+=======
+        // Progress bar
+>>>>>>> Stashed changes
         double progress_percentage = 0.0;
         sf::RectangleShape progress_bar_background;
         sf::RectangleShape progress_bar_fill;
@@ -385,10 +803,27 @@ namespace Game {
         float progress_bar_x = 0.0f;
         float progress_bar_y = 40.0f;
         
+<<<<<<< Updated upstream
         // Initialize combo text
         if (font_loaded) {
             combo_text.setFont(default_font);
             combo_text.setCharacterSize(120);  // Increased to 120
+=======
+        progress_bar_background.setSize(sf::Vector2f(progress_bar_width, progress_bar_height));
+        progress_bar_background.setPosition(progress_bar_x, progress_bar_y);
+        progress_bar_background.setFillColor(sf::Color(50, 50, 50));  // Dark gray background
+        progress_bar_background.setOutlineColor(sf::Color::White);
+        progress_bar_background.setOutlineThickness(2.0f);
+        
+        progress_bar_fill.setSize(sf::Vector2f(0.0f, progress_bar_height));
+        progress_bar_fill.setPosition(progress_bar_x, progress_bar_y);
+        progress_bar_fill.setFillColor(sf::Color(0, 200, 255));  // Cyan color
+        
+        // Initialize combo text
+        if (font_loaded) {
+            combo_text.setFont(default_font);
+            combo_text.setCharacterSize(120);  // Large font size
+>>>>>>> Stashed changes
             combo_text.setFillColor(sf::Color::White);
             combo_text.setString("0");
             // Position below judge line
@@ -406,6 +841,7 @@ namespace Game {
             score_text.setString("Score: 0");
             score_text.setPosition(10.0f, progress_bar_y + progress_bar_height + 15.0f);  // Below progress bar
         }
+<<<<<<< Updated upstream
         
         progress_bar_background.setSize(sf::Vector2f(progress_bar_width, progress_bar_height));
         progress_bar_background.setPosition(progress_bar_x, progress_bar_y);
@@ -418,6 +854,10 @@ namespace Game {
         progress_bar_fill.setFillColor(sf::Color(0, 200, 255));  // Cyan color
 
         // Track key states for each track (S, F, H, K)
+=======
+
+        // Track key states for each track
+>>>>>>> Stashed changes
         struct TrackKey {
             sf::Keyboard::Key key;
             int track_index;
@@ -425,10 +865,18 @@ namespace Game {
             bool was_pressed;
         };
 
+<<<<<<< Updated upstream
         TrackKey track_keys[4] = {
             {sf::Keyboard::S, 0, false, false},  // S key -> track 0
             {sf::Keyboard::F, 1, false, false},  // F key -> track 1
             {sf::Keyboard::H, 2, false, false},  // H key -> track 2
+=======
+        // 直接使用DFJK键位，不区分大小写（SFML的Keyboard::D等已经处理了大小写）
+        TrackKey track_keys[NUM_TRACKS] = {
+            {sf::Keyboard::D, 0, false, false},  // D key -> track 0
+            {sf::Keyboard::F, 1, false, false},  // F key -> track 1
+            {sf::Keyboard::J, 2, false, false},  // J key -> track 2
+>>>>>>> Stashed changes
             {sf::Keyboard::K, 3, false, false}   // K key -> track 3
         };
         
@@ -483,24 +931,36 @@ namespace Game {
             // Calculate elapsed time in seconds (double precision)
             double current_time_seconds = (current_time_ms / 1000.0) - game_start_time_seconds;
             
+<<<<<<< Updated upstream
             // Update progress bar (1 minute from 0 to 100%)
             progress_percentage = (current_time_seconds / PROGRESS_BAR_DURATION_SECONDS) * 100.0;
+=======
+            // Update progress bar based on music duration
+            progress_percentage = (current_time_seconds / progress_bar_duration_seconds) * 100.0;
+>>>>>>> Stashed changes
             if (progress_percentage > 100.0) {
                 progress_percentage = 100.0;
             }
             float fill_width = static_cast<float>(progress_percentage / 100.0 * progress_bar_width);
             progress_bar_fill.setSize(sf::Vector2f(fill_width, progress_bar_height));
             
+<<<<<<< Updated upstream
             // Calculate and update score (perfect*10 + good*3 + miss*1)
             unsigned int current_score = perfect_count * 10 + good_count * 3 + miss_count * 1;
             if (font_loaded) {
                 score_text.setString("Score: " + std::to_string(current_score));
             }
             
+=======
+>>>>>>> Stashed changes
             // Update judgment display (fade out effect)
             updateJudgmentDisplay(judgment_display, current_time_ms);
             
             // Spawn new notes when their bottom edge enters screen
+<<<<<<< Updated upstream
+=======
+            // 使用对象池中的模板生成活跃音符
+>>>>>>> Stashed changes
             for (const auto& template_note : note_templates) {
                 // Check if this note should spawn
                 ActiveNote test_note = {
@@ -560,6 +1020,10 @@ namespace Game {
                     }
 
                     // Process the best judgment found for this track
+<<<<<<< Updated upstream
+=======
+                    // 按照111.cpp的逻辑：需要font_loaded为true才处理判定，且不立即移除音符
+>>>>>>> Stashed changes
                     if (best_result >= 0 && best_note != nullptr && font_loaded) {
                         // Show judgment display
                         showJudgment(judgment_display, best_result, current_time_ms,
@@ -595,10 +1059,25 @@ namespace Game {
                                                text_bounds.top + text_bounds.height / 2.0f);
                             combo_text.setPosition(window_width / 2.0f, judge_line_y + 50.0f);
                         }
+<<<<<<< Updated upstream
+=======
+                        
+                        // 注意：按照111.cpp的逻辑，这里不立即移除音符
+                        // 音符会在离开屏幕时自动移除（在后面的代码中处理）
+>>>>>>> Stashed changes
                     }
                 }
             }
             
+<<<<<<< Updated upstream
+=======
+            // Calculate and update score (perfect*10 + good*3 + miss*1)
+            unsigned int current_score = perfect_count * 10 + good_count * 3 + miss_count * 1;
+            if (font_loaded) {
+                score_text.setString("Score: " + std::to_string(current_score));
+            }
+            
+>>>>>>> Stashed changes
             // Remove notes that have left screen (top edge passed bottom)
             active_notes.erase(
                 std::remove_if(
@@ -635,21 +1114,39 @@ namespace Game {
             // Draw judge line (on top of tracks)
             window.draw(judge_line);
             
+<<<<<<< Updated upstream
             // Draw judgment display if active
+=======
+            // ===== UI Elements - Rendered last to be on top of everything =====
+            
+            // Draw progress bar at top
+            window.draw(progress_bar_background);
+            window.draw(progress_bar_fill);
+            
+            // Draw judgment display (PERFECT/GOOD/MISS) - on top of everything
+>>>>>>> Stashed changes
             if (judgment_display.is_active && judgment_display.judgment_type >= 0) {
                 window.draw(judgment_display.text);
             }
             
+<<<<<<< Updated upstream
             // Draw progress bar at top - rendered last to be on top
             window.draw(progress_bar_background);
             window.draw(progress_bar_fill);
             
             // Draw combo count - rendered last to be on top of everything
+=======
+            // Draw combo count - on top of everything
+>>>>>>> Stashed changes
             if (font_loaded) {
                 window.draw(combo_text);
             }
             
+<<<<<<< Updated upstream
             // Draw score - rendered last to be on top of everything
+=======
+            // Draw score - on top of everything
+>>>>>>> Stashed changes
             if (font_loaded) {
                 window.draw(score_text);
             }
@@ -658,7 +1155,18 @@ namespace Game {
             window.display();
         }
         
+<<<<<<< Updated upstream
         // Cleanup timer
         timer::shutdown();
+=======
+        // Stop music before cleanup
+        music::stop();
+        
+        // Cleanup timer
+        timer::shutdown();
+        
+        // Cleanup music resources
+        music::cleanup();
+>>>>>>> Stashed changes
     }
 }

@@ -19,18 +19,27 @@ namespace music {
     // 停止播放音乐
     void stop();
     
+<<<<<<< Updated upstream
     // 暂停播放音乐
     void pause();
     
     // 继续播放音乐
     void resume();
     
+=======
+>>>>>>> Stashed changes
     // 获取音乐播放状态
     sf::Music::Status getStatus();
     
     // 获取当前播放位置（毫秒）
     std::chrono::milliseconds getPlayingOffset();
     
+<<<<<<< Updated upstream
+=======
+    // 获取音乐总时长（毫秒）
+    std::chrono::milliseconds getDuration();
+    
+>>>>>>> Stashed changes
     // 设置音量 (0-100)
     void setVolume(float volume);
     

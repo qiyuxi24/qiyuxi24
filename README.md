@@ -1,7 +1,7 @@
 # NOJ_Solution
 
 > 基于 C++ 的 4K 音游模拟器（仿 Malody）
-
+### 可执行文件在123文件夹下，叫noj——solution.exe
 ---
 
 ## 零 · 简介
@@ -28,7 +28,6 @@
     - 背景静态图片
     - 进度条
     - 音乐、画面、判定、连击数
-    - 暂停 → 设置
 - **结算**
     - 统计
     - 准确率 ACC
@@ -41,16 +40,14 @@
 
     NOJ_Solution/
     ├── beatmap/                 # 谱面资源目录
-    │   └── 曲目名称/
+    │   └── 曲目编号/
     │       ├── background.jpg   # 背景图片
     │       ├── music.ogg        # 背景音乐
     │       └── chart.mc         # 谱面文件
-    ├── users/                   # 用户数据
-    │   └── username/
-    │       └── user.data        # 账号密码成绩
     ├── logs/                    # 日志文件夹
     ├── screenshot/              # 成绩截图
     ├── config.data              # 全局配置
+    ├── local_score.data         # 本地成绩数据
     ├── *.dl
     ├── *.dll
     └── play.exe                 # 游戏主程序
@@ -65,7 +62,7 @@
 
 - `Beatmap` // 读谱面文件（包括图片音频）
 - `Config` // 读写配置文件
-- `User` // 读写用户信息、成绩
+- `LocalScore` // 读写本地成绩
 - `Screenshot` // 读写成绩截图
 - `Logger` // 日志记录
 

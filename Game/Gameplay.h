@@ -9,7 +9,12 @@
 
 namespace Game {
     // Main gameplay function - runs the full-screen rhythm game
+<<<<<<< Updated upstream
     void Gameplay();
+=======
+    // @param chart_path Path to the chart file (relative to product_path)
+    void Gameplay(const std::string& chart_path = "");
+>>>>>>> Stashed changes
 }
 
 #endif //NOJ_SOLUTION_GAMEPLAY_H
