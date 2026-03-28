@@ -1,0 +1,6 @@
+1
+Test_song
+./testsong.png
+./testsongs.png
+./resource/Noushou Sakuretsu Girl(cut).ogg
+0
