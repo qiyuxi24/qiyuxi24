@@ -18,7 +18,7 @@
 - Agent Loop 四道止血：轮数上限、单工具超时、无工具时丢弃幻觉 tool_call、强制收尾
 - 评测数据与 trace 全落盘，A/B 可复跑（`backend/eval_data/`）
 
-### [Votek](https://github.com/qiyuxi24/Agent) · 本地优先的 AI 工作台（桌面）
+### [Votek](https://github.com/qiyuxi24/votek) · 本地优先的 AI 工作台（桌面）
 Tauri v2 + React 19 + Rust。集成 code-server、MCP stdio、向量检索；Tauri 打包体积比 Electron 小一个量级。
 写它的时候顺手修了 13 处技术债，其中两处是 Windows 下真会崩的：`#[cfg(windows)]` 守卫缺失、多字节 UTF-8 截断开 panic。
 
